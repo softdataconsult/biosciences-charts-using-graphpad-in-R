@@ -1,0 +1,222 @@
+---
+title: "biosciences-charts-using-graphpad-in-R"
+format: html
+editor: visual
+---
+
+```{r}
+# ============================================================
+# GraphPad-style B&W patterned bar charts — R/ggplot2
+# Thankgod data — 9 biochemical assays, 5 groups
+# Requires: ggplot2, ggpattern, patchwork
+# Install: install.packages(c("ggplot2", "ggpattern", "patchwork"))
+# ============================================================
+
+library(ggplot2)
+library(ggpattern)
+library(patchwork)
+
+dir.create("plots", showWarnings = FALSE)
+
+# ============================================================
+# DATA
+# ============================================================
+groups <- paste0("Group ", 1:5)
+
+data_list <- list(
+  GLU = data.frame(
+    group  = groups,
+    mean   = c(0.481, 0.404, 0.397, 0.474, 0.412),
+    sd     = c(0.144, 0.104, 0.075, 0.055, 0.118),
+    letter = c("a",   "a",   "a",   "a",   "a")
+  ),
+  TP = data.frame(
+    group  = groups,
+    mean   = c(0.526, 0.464, 0.526, 0.437, 0.406),
+    sd     = c(0.071, 0.038, 0.078, 0.059, 0.023),
+    letter = c("a",   "ab",  "a",   "ab",  "b")
+  ),
+  NO = data.frame(
+    group  = groups,
+    mean   = c(2.681, 2.609, 2.745, 2.645, 2.736),
+    sd     = c(0.279, 0.259, 0.267, 0.318, 0.267),
+    letter = c("a",   "a",   "a",   "a",   "a")
+  ),
+  GSH = data.frame(
+    group  = groups,
+    mean   = c(0.069, 0.086, 0.067, 0.084, 0.083),
+    sd     = c(0.009, 0.060, 0.020, 0.010, 0.021),
+    letter = c("a",   "a",   "a",   "a",   "a")
+  ),
+  MAO = data.frame(
+    group  = groups,
+    mean   = c(0.096, 0.113, 0.081, 0.145, 0.080),
+    sd     = c(0.052, 0.055, 0.033, 0.041, 0.020),
+    letter = c("a",   "a",   "a",   "a",   "a")
+  ),
+  TT = data.frame(
+    group  = groups,
+    mean   = c(0.125, 0.144, 0.135, 0.152, 0.183),
+    sd     = c(0.021, 0.055, 0.048, 0.039, 0.057),
+    letter = c("a",   "a",   "a",   "a",   "a")
+  ),
+  CAT = data.frame(
+    group  = groups,
+    mean   = c(0.1442, 0.1312, 0.1288, 0.1339, 0.1182),
+    sd     = c(0.0202, 0.0061, 0.0102, 0.0260, 0.0254),
+    letter = c("a",    "ab",   "ab",   "ab",   "b")
+  ),
+  GST = data.frame(
+    group  = groups,
+    mean   = c(0.852, 0.633, 0.739, 0.741, 0.843),
+    sd     = c(0.211, 0.066, 0.177, 0.229, 0.158),
+    letter = c("a",   "a",   "a",   "a",   "a")
+  ),
+  ACHE = data.frame(
+    group  = groups,
+    mean   = c(0.1218, 0.1111, 0.0869, 0.1045, 0.0939),
+    sd     = c(0.0175, 0.0133, 0.0188, 0.0607, 0.0165),
+    letter = c("a",    "a",    "a",    "a",    "a")
+  )
+)
+
+# ============================================================
+# Y-AXIS LABELS & TITLES
+# ============================================================
+ylabels <- list(
+  GLU  = "GLU activity (\u00b5mol/mg protein)",
+  TP   = "TP level (mg/mL)",
+  NO   = "NO level (nmol/mg protein)",
+  GSH  = "GSH level (\u00b5mol/mg protein)",
+  MAO  = "MAO activity (\u00b5mol/mg protein)",
+  TT   = "Total thiol level (mmol/mg protein)",
+  CAT  = "CAT activity (\u00b5mol/mg protein)",
+  GST  = "GST activity (\u00b5mol/mg protein)",
+  ACHE = "AChE activity (\u00b5mol/mL/mg protein)"
+)
+
+titles <- list(
+  GLU  = "Effect of AESS on glucose level in AlCl\u2083-induced\nneurotoxicity in D. melanogaster",
+  TP   = "Effect of AESS on total protein level in AlCl\u2083-induced\nneurotoxicity in D. melanogaster",
+  NO   = "Effect of AESS on nitric oxide level in AlCl\u2083-induced\nneurotoxicity in D. melanogaster",
+  GSH  = "Effect of AESS on glutathione level in AlCl\u2083-induced\nneurotoxicity in D. melanogaster",
+  MAO  = "Effect of AESS on monoamine oxidase activity in AlCl\u2083-induced\nneurotoxicity in D. melanogaster",
+  TT   = "Effect of AESS on total thiol level in AlCl\u2083-induced\nneurotoxicity in D. melanogaster",
+  CAT  = "Effect of AESS on catalase activity in AlCl\u2083-induced\nneurotoxicity in D. melanogaster",
+  GST  = "Effects of AESS on glutathione-S-transferase activity in AlCl\u2083-induced\nneurotoxicity in D. melanogaster",
+  ACHE = "Effect of AESS on acetylcholinesterase activity in AlCl\u2083-induced\nneurotoxicity in D. melanogaster"
+)
+
+# ============================================================
+# HATCH PATTERNS (one per group)
+# pattern: "stripe" with varying angle mimics the sample images
+# Group1 = diagonal cross (x), Group2 = checkerboard (+),
+# Group3 = vertical (|), Group4 = diagonal (/), Group5 = dense grid
+# ============================================================
+pattern_types   <- c("crosshatch", "crosshatch", "stripe", "stripe", "crosshatch")
+pattern_angles  <- c(45,            0,             90,       45,       0)
+pattern_spacing <- c(0.07,          0.05,          0.05,     0.07,     0.03)
+
+# ============================================================
+# THEME
+# ============================================================
+bw_theme <- theme_classic() +
+  theme(
+    panel.border    = element_rect(colour = "black", fill = NA, linewidth = 0.8),
+    axis.line       = element_blank(),
+    axis.text.x     = element_text(colour = "black", size = 9,
+                                   angle = 45, hjust = 1),   # <-- slanted labels
+    axis.text.y     = element_text(colour = "black", size = 9),
+    axis.title      = element_text(colour = "black", size = 10),
+    plot.title      = element_text(size = 8, hjust = 0.5, face = "italic"),
+    legend.position = "none",
+    axis.ticks      = element_line(colour = "black")
+  )
+
+# ============================================================
+# PLOT FUNCTION
+# ============================================================
+make_plot <- function(assay_name) {
+  df        <- data_list[[assay_name]]
+  df$group  <- factor(df$group, levels = groups)
+  df$label_y <- df$mean + df$sd + max(df$mean) * 0.06
+
+  ggplot(df, aes(x = group, y = mean)) +
+    geom_bar_pattern(
+      aes(pattern_angle   = group,
+          pattern_spacing = group),
+      stat            = "identity",
+      pattern         = "stripe",
+      fill            = "white",
+      colour          = "black",
+      linewidth       = 0.5,
+      pattern_colour  = "black",
+      pattern_fill    = "black",
+      pattern_density = 0.4,
+      width           = 0.65
+    ) +
+    scale_pattern_angle_manual(
+      values = c("Group 1" = 45,  "Group 2" = 0,
+                 "Group 3" = 90,  "Group 4" = 135, "Group 5" = 45)
+    ) +
+    scale_pattern_spacing_manual(
+      values = c("Group 1" = 0.07, "Group 2" = 0.05,
+                 "Group 3" = 0.05, "Group 4" = 0.07, "Group 5" = 0.03)
+    ) +
+    geom_errorbar(
+      aes(ymin = mean - sd, ymax = mean + sd),
+      width = 0.2, linewidth = 0.6, colour = "black"
+    ) +
+    geom_text(
+      aes(y = label_y, label = letter),
+      size = 3.5, fontface = "italic", vjust = 0
+    ) +
+    scale_y_continuous(expand = expansion(mult = c(0, 0.15))) +
+    labs(
+      x     = "Treatment",
+      y     = ylabels[[assay_name]],
+      title = titles[[assay_name]]
+    ) +
+    bw_theme
+}
+
+# ============================================================
+# SAVE INDIVIDUAL PLOTS
+# ============================================================
+assay_names <- names(data_list)
+
+for (a in assay_names) {
+  p <- make_plot(a)
+  ggsave(
+    filename = paste0("plots/Fig_", a, ".png"),
+    plot     = p,
+    width    = 5, height = 4.2, dpi = 300, bg = "white"
+  )
+  cat("Saved:", a, "\n")
+}
+
+# ============================================================
+# COMBINED 3x3 PANEL
+# ============================================================
+plots <- lapply(assay_names, make_plot)
+panel <- wrap_plots(plots, ncol = 3) +
+  plot_annotation(
+    caption = paste0(
+      "Data are presented as Mean \u00b1 SD (n = 5). ",
+      "Different superscript letters indicate significant differences at p < 0.05.\n",
+      "Group 1 = control; Group 2 = AlCl\u2083 (0.1 mg/g diet); ",
+      "Group 3 = AlCl\u2083 + AESS (0.25 mg/g diet); ",
+      "Group 4 = AlCl\u2083 + AESS (0.5 mg/g diet); ",
+      "Group 5 = AESS (0.4 mg/g diet) only."
+    ),
+    theme = theme(plot.caption = element_text(size = 7, hjust = 0, face = "italic"))
+  )
+
+ggsave(
+  filename = "plots/Fig_ALL_panel.png",
+  plot     = panel,
+  width    = 15, height = 13, dpi = 300, bg = "white"
+)
+cat("Saved: combined panel\n")
+```
+

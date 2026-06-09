@@ -1,0 +1,93 @@
+# GraphPad-style bar charts in R (ggplot2)
+# Reads summarized data (`example_data.csv`) and optional per-subject data (`example_subjects.csv`)
+# Produces bar charts (mean ± SD), boxplots and violin plots when subject data is available.
+
+library(ggplot2)
+library(readr)
+library(dplyr)
+library(cowplot)
+
+# Optional pattern support
+use_ggpattern <- requireNamespace("ggpattern", quietly = TRUE)
+if (use_ggpattern) library(ggpattern)
+
+# Helpers
+read_summary <- function(path = "example_data.csv") {
+  read_csv(path)
+}
+
+read_subjects <- function(path = "example_subjects.csv") {
+  if (!file.exists(path)) return(NULL)
+  read_csv(path)
+}
+
+plot_bar_assay <- function(df, assay_name) {
+  d <- df %>% filter(assay == assay_name)
+  d <- d %>% mutate(group = factor(group, levels = unique(group)))
+
+  p <- ggplot(d, aes(x = group, y = mean)) +
+    {
+      if (use_ggpattern) {
+        geom_col_pattern(aes(pattern = group), colour = "black", fill = "white", width = 0.6,
+                         pattern_fill = "black", pattern_density = 0.2, pattern_spacing = 0.02)
+      } else {
+        geom_col(colour = "black", fill = "white", width = 0.6)
+      }
+    } +
+    geom_errorbar(aes(ymin = mean - sd, ymax = mean + sd), width = 0.12, size = 0.6) +
+    geom_text(aes(y = mean + sd + max(mean + sd) * 0.06, label = letter), fontface = "italic", size = 3) +
+    labs(title = unique(d$title), y = unique(d$ylabel), x = "Treatment") +
+    theme_classic(base_size = 11) +
+    theme(plot.title = element_text(face = "italic", size = 10), axis.text.x = element_text(angle = 45, hjust = 1))
+  return(p)
+}
+
+plot_subject_assay <- function(df_sub, assay_name, kind = c("box", "violin")) {
+  kind <- match.arg(kind)
+  d <- df_sub %>% filter(assay == assay_name)
+  d <- d %>% mutate(group = factor(group, levels = unique(group)))
+
+  p <- ggplot(d, aes(x = group, y = value)) +
+    (if (kind == "box") geom_boxplot(outlier.shape = NA, fill = "white", colour = "black") else geom_violin(fill = "white", colour = "black")) +
+    geom_jitter(width = 0.12, size = 1.6) +
+    labs(title = unique(d$title), y = unique(d$ylabel), x = "Treatment") +
+    theme_classic(base_size = 11) +
+    theme(plot.title = element_text(face = "italic", size = 10), axis.text.x = element_text(angle = 45, hjust = 1))
+  return(p)
+}
+
+dir.create("plots_R", showWarnings = FALSE)
+
+if (file.exists("example_data.csv")) {
+  dat <- read_summary()
+  assays <- unique(dat$assay)
+  plots <- list()
+  for (a in assays) {
+    p <- plot_bar_assay(dat, a)
+    ggsave(file.path("plots_R", paste0("Fig_", a, ".png")), plot = p, width = 5, height = 4.2, dpi = 300)
+    plots[[a]] <- p
+    message("Saved: plots_R/Fig_", a, ".png")
+  }
+  # combined panel
+  plot_list <- lapply(assays, function(x) plots[[x]] + theme(axis.title.x = element_blank()))
+  combined <- plot_grid(plotlist = plot_list, ncol = 3)
+  caption <- paste0("Data are presented as Mean ± SD (n = 5). Different superscript letters indicate\n",
+                    "significant differences at p < 0.05. Group 1 = control; Group 2 = AlCl3; Group 3 = AlCl3 + AESS (0.25 mg/g diet);\n",
+                    "Group 4 = AlCl3 + AESS (0.5 mg/g diet); Group 5 = AESS (0.4 mg/g diet) only.")
+  combined_with_caption <- ggdraw() + draw_plot(combined) + draw_label(caption, x = 0.5, y = 0.02, hjust = 0.5, size = 8, fontface = "italic")
+  ggsave("plots_R/Fig_ALL_panel.png", combined_with_caption, width = 15, height = 13, dpi = 300)
+  message("Saved: plots_R/Fig_ALL_panel.png")
+}
+
+subs <- read_subjects()
+if (!is.null(subs)) {
+  assays_sub <- unique(subs$assay)
+  for (a in assays_sub) {
+    pbox <- plot_subject_assay(subs, a, kind = "box")
+    ggsave(file.path("plots_R", paste0("Box_", a, ".png")), plot = pbox, width = 5, height = 4.2, dpi = 300)
+    message("Saved: plots_R/Box_", a, ".png")
+    pviolin <- plot_subject_assay(subs, a, kind = "violin")
+    ggsave(file.path("plots_R", paste0("Violin_", a, ".png")), plot = pviolin, width = 5, height = 4.2, dpi = 300)
+    message("Saved: plots_R/Violin_", a, ".png")
+  }
+}

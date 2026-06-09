@@ -1,0 +1,12 @@
+assay,group,subject,value,ylabel,title
+GLU,Group 1,S1,0.52,GLU activity (µmol/mg protein),"Effect of AESS on glucose level in AlCl₃-induced\nneurotoxicity in D. melanogaster"
+GLU,Group 1,S2,0.39,GLU activity (µmol/mg protein),"Effect of AESS on glucose level in AlCl₃-induced\nneurotoxicity in D. melanogaster"
+GLU,Group 1,S3,0.47,GLU activity (µmol/mg protein),"Effect of AESS on glucose level in AlCl₃-induced\nneurotoxicity in D. melanogaster"
+GLU,Group 1,S4,0.33,GLU activity (µmol/mg protein),"Effect of AESS on glucose level in AlCl₃-induced\nneurotoxicity in D. melanogaster"
+GLU,Group 1,S5,0.61,GLU activity (µmol/mg protein),"Effect of AESS on glucose level in AlCl₃-induced\nneurotoxicity in D. melanogaster"
+GLU,Group 2,S1,0.42,GLU activity (µmol/mg protein),"Effect of AESS on glucose level in AlCl₃-induced\nneurotoxicity in D. melanogaster"
+GLU,Group 2,S2,0.35,GLU activity (µmol/mg protein),"Effect of AESS on glucose level in AlCl₃-induced\nneurotoxicity in D. melanogaster"
+GLU,Group 2,S3,0.48,GLU activity (µmol/mg protein),"Effect of AESS on glucose level in AlCl₃-induced\nneurotoxicity in D. melanogaster"
+GLU,Group 2,S4,0.38,GLU activity (µmol/mg protein),"Effect of AESS on glucose level in AlCl₃-induced\nneurotoxicity in D. melanogaster"
+GLU,Group 2,S5,0.43,GLU activity (µmol/mg protein),"Effect of AESS on glucose level in AlCl₃-induced\nneurotoxicity in D. melanogaster"
+# ... subject-level rows for other assays omitted here for brevity; the pattern is the same.
